@@ -12,13 +12,17 @@ The order trigger serializes submissions by normalized phone number and permits 
 
 Next, open another **SQL Editor → New query**, paste the complete file `supabase/migrations/002_events.sql`, and run it. It creates the analytics event table and an admin-only summary function. A database trigger serializes events by random browser session ID and rejects event 101 or higher in a rolling hour for that session.
 
+After migration 002, open **SQL Editor → New query** again, paste the complete file `supabase/migrations/003_casablanca_timezone.sql`, and run it. This updates the analytics daily grouping to use the `Africa/Casablanca` timezone; run it after 002 because it replaces the summary function created there. Order filters, date displays, and Excel exports also use Casablanca time, including Morocco's Ramadan offset changes.
+
+After migration 003, run `supabase/migrations/004_admin_management.sql` in a new Supabase **SQL Editor → New query**. It adds admin-only functions for listing, adding, and removing admins. The functions enforce admin membership in the database; the frontend never writes directly to `public.admins`.
+
 ## 3. Disable public sign-ups
 
 In Supabase, open **Authentication → Providers → Email** and disable **Allow new users to sign up**. Admin accounts will be created by you in the dashboard; there is no sign-up screen in the site.
 
 ## 4. Create your friend's admin account
 
-In **Authentication → Users**, use **Add user** to create the account with your friend's email and a strong password. Copy that user's UUID. In **SQL Editor**, run the following after replacing the UUID:
+For the initial administrator only, create your friend's account in **Authentication → Users → Add user** with a strong password and enable **Auto Confirm User**. Copy that user's UUID. In **SQL Editor**, run the following after replacing the UUID to bootstrap the first admin:
 
 ```sql
 insert into public.admins (user_id)
@@ -26,6 +30,8 @@ values ('PASTE-AUTH-USER-UUID-HERE');
 ```
 
 Only UUIDs listed in `public.admins` can read or update orders. The `admins` table has no API access; the application checks membership through a restricted database function.
+
+Once you can sign in as an admin, create future admin accounts in **Authentication → Users → Add user**, enable **Auto Confirm User**, and create a temporary strong password for the user. Then open `/admin`, select **المشرفون**, enter the new account's email, and choose **إضافة مشرف**. Do not add later admins with direct table writes. The same tab lets each logged-in admin change their own password.
 
 ## 5. Configure and deploy on Vercel
 
@@ -54,6 +60,7 @@ For local development, copy `.env.example` to `.env.local`, fill in the two Supa
 6. Check the order's call and WhatsApp links on a phone.
 7. Accept the marketing-cookie notice, then use Meta Events Manager's **Test Events** tool or the **Meta Pixel Helper** browser extension to confirm PageView, ViewContent, InitiateCheckout, and Lead events. Lead fires only after an order is accepted; its payload contains only the total and MAD currency. The Lead `eventID` is also stored as the submitted event row's UUID for possible future deduplication.
 8. Open **الإحصائيات** in `/admin`, change the date range, and confirm the funnel and breakdowns load. Test in a private browser session with Do Not Track disabled; DNT-enabled browsers intentionally produce no analytics.
+9. Run `npm run check:dates` to verify normal-time and Ramadan Casablanca date conversion (`2026-10-24` and `2024-03-20`).
 
 ## 7. Security and launch checklist
 
