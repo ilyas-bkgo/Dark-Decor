@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { trackFormError, trackLead, type AnalyticsSummary } from './analytics';
 
 export type DbStatus = 'new' | 'confirmed' | 'shipped' | 'delivered' | 'canceled';
 export type DbOrder = {
@@ -26,7 +27,10 @@ type Database = {
   public: {
     Tables: { orders: { Row: DbOrder; Insert: OrderInsert; Update: Partial<Pick<DbOrder, 'status' | 'admin_note'>>; Relationships: [] } };
     Views: Record<string, never>;
-    Functions: { is_admin: { Args: Record<string, never>; Returns: boolean } };
+    Functions: {
+      is_admin: { Args: Record<string, never>; Returns: boolean };
+      analytics_summary: { Args: { p_from: string; p_to: string }; Returns: AnalyticsSummary };
+    };
     Enums: { order_status: DbStatus };
     CompositeTypes: Record<string, never>;
   };
@@ -48,8 +52,14 @@ const client = (): SupabaseClient<Database> => {
 export async function createOrder(
   order: Pick<OrderInsert, 'full_name' | 'phone' | 'city' | 'address' | 'offer' | 'quantity' | 'note'>,
 ): Promise<void> {
-  const { error } = await client().from('orders').insert(order);
-  if (error) throw error;
+  try {
+    const { error } = await client().from('orders').insert(order);
+    if (error) throw error;
+    trackLead(order.offer, order.offer === 'one' ? 149 : 249);
+  } catch (error) {
+    trackFormError(order.offer);
+    throw error;
+  }
 }
 
 export async function isAdmin(): Promise<boolean> {

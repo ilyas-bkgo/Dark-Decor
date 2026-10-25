@@ -10,6 +10,8 @@ In the Supabase dashboard, open **SQL Editor → New query**. Paste and run the 
 
 The order trigger serializes submissions by normalized phone number and permits at most five orders from one phone in a rolling hour. This is a basic abuse limit, not an IP-based CAPTCHA service. The form also retains its hidden honeypot and rejects submissions made less than three seconds after opening.
 
+Next, open another **SQL Editor → New query**, paste the complete file `supabase/migrations/002_events.sql`, and run it. It creates the analytics event table and an admin-only summary function. A database trigger serializes events by random browser session ID and rejects event 101 or higher in a rolling hour for that session.
+
 ## 3. Disable public sign-ups
 
 In Supabase, open **Authentication → Providers → Email** and disable **Allow new users to sign up**. Admin accounts will be created by you in the dashboard; there is no sign-up screen in the site.
@@ -36,9 +38,11 @@ In Vercel, open **Project → Settings → Environment Variables** and add these
 | `VITE_SUPABASE_URL` | Supabase Project URL |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable key |
 
-Save them, then redeploy so Vite includes the new environment values in the build. The Vercel build command is `npm run build`; output directory is `dist`. `vercel.json` rewrites `/admin` and other client routes to the SPA entry point so refreshing `/admin` works.
+To enable ads measurement, create a Meta Pixel in **Meta Events Manager → Connect data sources → Web**, then copy its Pixel ID. Add `VITE_META_PIXEL_ID` in the same Vercel Environment Variables page. Leave it unset or empty to disable the Pixel. The site asks visitors for marketing-cookie consent before loading Meta's script.
 
-For local development, copy `.env.example` to `.env.local`, fill in the two values, then run `npm run dev`.
+Save the variables, then redeploy so Vite includes the new environment values in the build. The Vercel build command is `npm run build`; output directory is `dist`. `vercel.json` rewrites `/admin` and other client routes to the SPA entry point so refreshing `/admin` works.
+
+For local development, copy `.env.example` to `.env.local`, fill in the two Supabase values and (optionally) the Pixel ID, then run `npm run dev`.
 
 ## 6. Test the full flow
 
@@ -48,10 +52,14 @@ For local development, copy `.env.example` to `.env.local`, fill in the two valu
 4. Change the order status, refresh the page, and confirm it persisted.
 5. Export Excel with filters active and confirm matching records, Arabic headers, and phone numbers with leading zeroes are present.
 6. Check the order's call and WhatsApp links on a phone.
+7. Accept the marketing-cookie notice, then use Meta Events Manager's **Test Events** tool or the **Meta Pixel Helper** browser extension to confirm PageView, ViewContent, InitiateCheckout, and Lead events. Lead fires only after an order is accepted; its payload contains only the total and MAD currency. The Lead `eventID` is also stored as the submitted event row's UUID for possible future deduplication.
+8. Open **الإحصائيات** in `/admin`, change the date range, and confirm the funnel and breakdowns load. Test in a private browser session with Do Not Track disabled; DNT-enabled browsers intentionally produce no analytics.
 
 ## 7. Security and launch checklist
 
 - Keep the Supabase service-role key out of Vercel frontend variables, source code, and chat. Only the Project URL and publishable key belong in the Vite app.
+- Meta Pixel is not loaded unless `VITE_META_PIXEL_ID` is configured and a visitor accepts the marketing-cookie notice.
+- Funnel analytics contain random session IDs, event/section names, selected offer, field names (never field values), device type, referrer host or UTM source, and campaign name. They do not contain names, phone numbers, addresses, or form text. Browsers with Do Not Track enabled are not tracked.
 - Keep public sign-ups disabled and grant admin membership only to trusted accounts.
 - Confirm the orders table has RLS enabled and the migration policies are present.
 - Use a unique admin password and enable multi-factor authentication for the Supabase account where available.
@@ -61,3 +69,5 @@ For local development, copy `.env.example` to `.env.local`, fill in the two valu
 ## Data protection and rate limit
 
 Orders contain only the name, phone, city, address, selected offer, quantity, note, status, timestamps, and optional admin note. The database computes the total and blocks more than five orders per normalized phone per hour. Admin filtering and Excel export query the database, not browser storage.
+
+Analytics use an independent `events` table with anonymous session-level measurements and a database summary function. The database limits each session to 100 events per rolling hour; the limit is keyed by the random session ID, not an IP address.
