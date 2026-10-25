@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "check:dates": "node --experimental-strip-types scripts/check-casablanca-dates.mjs",
     "check:excel": "node --experimental-strip-types scripts/check-excel-export.mjs",
+    "generate:brand-assets": "node scripts/generate-brand-assets.mjs",
     "lint": "eslint .",
     "preview": "vite preview --host 0.0.0.0"
   },
@@ -37,6 +38,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.7",
     "globals": "^17.13.0",
+    "sharp": "^0.35.5",
     "typescript-eslint": "^8.72.0"
   },
   "overrides": {

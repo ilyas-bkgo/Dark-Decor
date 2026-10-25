@@ -1,5 +1,10 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    {
+      "source": "/((?!favicon(?:-[^/]+)?\\.(?:ico|svg|png)$|apple-touch-icon\\.png$|icon-(?:192|512|maskable-512)\\.png$|site\\.webmanifest$|og-image\\.jpg$).*)",
+      "destination": "/index.html"
+    }
+  ]
 }

@@ -43,10 +43,11 @@ In Vercel, open **Project → Settings → Environment Variables** and add these
 | --- | --- |
 | `VITE_SUPABASE_URL` | Supabase Project URL |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable key |
+| `VITE_SITE_URL` | Public site origin, such as `https://your-domain.example` (optional; enables absolute social-preview URLs) |
 
 To enable ads measurement, create a Meta Pixel in **Meta Events Manager → Connect data sources → Web**, then copy its Pixel ID. Add `VITE_META_PIXEL_ID` in the same Vercel Environment Variables page. Leave it unset or empty to disable the Pixel. The site asks visitors for marketing-cookie consent before loading Meta's script.
 
-Save the variables, then redeploy so Vite includes the new environment values in the build. The Vercel build command is `npm run build`; output directory is `dist`. `vercel.json` rewrites `/admin` and other client routes to the SPA entry point so refreshing `/admin` works.
+Save the variables, then redeploy so Vite includes the new environment values in the build. Set `VITE_SITE_URL` to the final public site origin to enable absolute Open Graph image and page URLs; if unset, those URL tags are omitted. The Vercel build command is `npm run build`; output directory is `dist`. `vercel.json` rewrites `/admin` and other client routes to the SPA entry point so refreshing `/admin` works while static icons and the share image remain direct files.
 
 For local development, copy `.env.example` to `.env.local`, fill in the two Supabase values and (optionally) the Pixel ID, then run `npm run dev`.
 
