@@ -266,6 +266,12 @@ export function trackLead(offer: Offer, value: number): string {
   return eventID;
 }
 
+export function trackPurchase(value: number): void {
+  if (!trackingAllowed()) return;
+  loadPixel();
+  window.fbq?.('track', 'Purchase', { value, currency: 'MAD' });
+}
+
 export async function getAnalyticsSummary(from: string, to: string): Promise<AnalyticsSummary> {
   if (!supabase) throw new Error('Supabase is not configured.');
   const { data, error } = await supabase.rpc('analytics_summary', { p_from: from, p_to: to });

@@ -59,7 +59,7 @@ For local development, copy `.env.example` to `.env.local`, fill in the two Supa
 4. Change the order status, refresh the page, and confirm it persisted.
 5. Export Excel with filters active and confirm matching records, Arabic headers, and phone numbers with leading zeroes are present.
 6. Check the order's call and WhatsApp links on a phone.
-7. Use Meta Events Manager's **Test Events** tool or the **Meta Pixel Helper** browser extension to confirm PageView, ViewContent, InitiateCheckout, and Lead events. Lead fires only after an order is accepted; its payload contains only the total and MAD currency. The Lead `eventID` is also stored as the submitted event row's UUID for possible future deduplication.
+7. Use Meta Events Manager's **Test Events** tool or the **Meta Pixel Helper** browser extension to confirm PageView, ViewContent, InitiateCheckout, Lead, and Purchase events. Lead and Purchase fire only after the order is successfully recorded; both contain only the total and MAD currency. The Purchase event is sent when the order confirmation screen is shown; for cash-on-delivery orders, this records an order placed rather than payment settled. Lead's `eventID` is also stored as the submitted event row's UUID for possible future deduplication.
 8. Open **الإحصائيات** in `/admin`, change the date range, and confirm the funnel and breakdowns load. Test in a private browser session with Do Not Track disabled; DNT-enabled browsers intentionally produce no analytics.
 9. Run `npm run check:dates` to verify normal-time and Ramadan Casablanca date conversion (`2026-10-24` and `2024-03-20`).
 
