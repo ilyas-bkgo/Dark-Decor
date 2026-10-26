@@ -45,7 +45,7 @@ In Vercel, open **Project → Settings → Environment Variables** and add these
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable key |
 | `VITE_SITE_URL` | Public site origin, such as `https://your-domain.example` (optional; enables absolute social-preview URLs) |
 
-To enable ads measurement, create a Meta Pixel in **Meta Events Manager → Connect data sources → Web**, then copy its Pixel ID. Add `VITE_META_PIXEL_ID` in the same Vercel Environment Variables page. Leave it unset or empty to disable the Pixel. The site asks visitors for marketing-cookie consent before loading Meta's script.
+To enable ads measurement, create a Meta Pixel in **Meta Events Manager → Connect data sources → Web**, then copy its Pixel ID. Add `VITE_META_PIXEL_ID` in the same Vercel Environment Variables page. Leave it unset or empty to disable the Pixel. After deployment, the storefront loads Meta's script and sends a `PageView` automatically for visitors who have not enabled Do Not Track; admin pages are excluded. The storefront does not show a marketing-cookie consent banner.
 
 Save the variables, then redeploy so Vite includes the new environment values in the build. Set `VITE_SITE_URL` to the final public site origin to enable absolute Open Graph image and page URLs; if unset, those URL tags are omitted. The Vercel build command is `npm run build`; output directory is `dist`. `vercel.json` rewrites `/admin` and other client routes to the SPA entry point so refreshing `/admin` works while static icons and the share image remain direct files.
 
@@ -59,14 +59,14 @@ For local development, copy `.env.example` to `.env.local`, fill in the two Supa
 4. Change the order status, refresh the page, and confirm it persisted.
 5. Export Excel with filters active and confirm matching records, Arabic headers, and phone numbers with leading zeroes are present.
 6. Check the order's call and WhatsApp links on a phone.
-7. Accept the marketing-cookie notice, then use Meta Events Manager's **Test Events** tool or the **Meta Pixel Helper** browser extension to confirm PageView, ViewContent, InitiateCheckout, and Lead events. Lead fires only after an order is accepted; its payload contains only the total and MAD currency. The Lead `eventID` is also stored as the submitted event row's UUID for possible future deduplication.
+7. Use Meta Events Manager's **Test Events** tool or the **Meta Pixel Helper** browser extension to confirm PageView, ViewContent, InitiateCheckout, and Lead events. Lead fires only after an order is accepted; its payload contains only the total and MAD currency. The Lead `eventID` is also stored as the submitted event row's UUID for possible future deduplication.
 8. Open **الإحصائيات** in `/admin`, change the date range, and confirm the funnel and breakdowns load. Test in a private browser session with Do Not Track disabled; DNT-enabled browsers intentionally produce no analytics.
 9. Run `npm run check:dates` to verify normal-time and Ramadan Casablanca date conversion (`2026-10-24` and `2024-03-20`).
 
 ## 7. Security and launch checklist
 
 - Keep the Supabase service-role key out of Vercel frontend variables, source code, and chat. Only the Project URL and publishable key belong in the Vite app.
-- Meta Pixel is not loaded unless `VITE_META_PIXEL_ID` is configured and a visitor accepts the marketing-cookie notice.
+- Meta Pixel loads automatically when `VITE_META_PIXEL_ID` is configured, except on admin pages or when the browser has Do Not Track enabled. Confirm this behavior is appropriate for the privacy requirements in the regions where the store operates.
 - Funnel analytics contain random session IDs, event/section names, selected offer, field names (never field values), device type, referrer host or UTM source, and campaign name. They do not contain names, phone numbers, addresses, or form text. Browsers with Do Not Track enabled are not tracked.
 - Keep public sign-ups disabled and grant admin membership only to trusted accounts.
 - Confirm the orders table has RLS enabled and the migration policies are present.

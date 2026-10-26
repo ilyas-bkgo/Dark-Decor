@@ -59,7 +59,6 @@ declare global {
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const pixelId = import.meta.env.VITE_META_PIXEL_ID?.trim();
-const consentKey = 'dark-decor-meta-consent';
 const sessionKey = 'dark-decor-analytics-session';
 const startedKey = 'dark-decor-form-started';
 const reachedKey = 'dark-decor-form-fields';
@@ -68,8 +67,6 @@ let authReady = false;
 let adminSession = false;
 let initialization: Promise<void> | undefined;
 let pixelLoaded = false;
-let pixelConsent = false;
-let consentDeclined = false;
 let volatileSessionId: string | undefined;
 let offersViewed = false;
 let pixelViewContentSent = false;
@@ -113,7 +110,7 @@ function getTrafficSource(): { referrer_source: string | null; utm_campaign: str
 }
 
 function loadPixel(): void {
-  if (pixelLoaded || !pixelId || !pixelConsent || !trackingAllowed()) return;
+  if (pixelLoaded || !pixelId || !trackingAllowed()) return;
   pixelLoaded = true;
   const queue: NonNullable<Window['fbq']> = (...args) => {
     const fbq = queue as typeof queue & { callMethod?: (...values: Parameters<typeof queue>) => void; queue?: unknown[]; loaded?: boolean; version?: string };
@@ -134,68 +131,25 @@ function loadPixel(): void {
 }
 
 function sendPixelViewContent(): void {
-  if (!offersViewed || pixelViewContentSent || !pixelConsent || !trackingAllowed()) return;
+  if (!offersViewed || pixelViewContentSent || !trackingAllowed()) return;
   loadPixel();
   window.fbq?.('track', 'ViewContent');
   pixelViewContentSent = true;
 }
 
 function sendPixelInitiateCheckout(): void {
-  if (!formWasStarted || pixelCheckoutSent || !pixelConsent || !trackingAllowed()) return;
+  if (!formWasStarted || pixelCheckoutSent || !trackingAllowed()) return;
   loadPixel();
   window.fbq?.('track', 'InitiateCheckout');
   pixelCheckoutSent = true;
 }
 
-function showMetaConsent(): void {
-  if (!pixelId || pixelConsent || consentDeclined || !trackingAllowed() || document.getElementById('meta-consent-banner')) return;
-  const banner = document.createElement('aside');
-  banner.id = 'meta-consent-banner';
-  banner.className = 'meta-consent-banner';
-  banner.setAttribute('aria-label', 'إعدادات ملفات تعريف الارتباط');
-  const message = document.createElement('p');
-  message.textContent = 'نستعمل ملفات تعريف الارتباط لقياس أداء الصفحة وتحسين الإعلانات.';
-  const privacy = document.createElement('a');
-  privacy.href = '/privacy.html';
-  privacy.textContent = 'سياسة الخصوصية';
-  const accept = document.createElement('button');
-  accept.type = 'button';
-  accept.textContent = 'موافقة';
-  accept.addEventListener('click', () => {
-    acceptMetaConsent();
-    banner.remove();
-  });
-  const decline = document.createElement('button');
-  decline.type = 'button';
-  decline.className = 'consent-decline';
-  decline.textContent = 'ليس الآن';
-  decline.addEventListener('click', () => {
-    try {
-      localStorage.setItem(consentKey, 'declined');
-    } catch {
-      pixelConsent = false;
-    }
-    consentDeclined = true;
-    banner.remove();
-  });
-  banner.append(message, privacy, accept, decline);
-  document.body.append(banner);
-}
-
 export function startAnalytics(): Promise<void> {
   if (initialization) return initialization;
-  try {
-    const storedConsent = localStorage.getItem(consentKey);
-    pixelConsent = storedConsent === 'accepted';
-    consentDeclined = storedConsent === 'declined';
-  } catch {
-    pixelConsent = false;
-  }
   initialization = new Promise((resolve) => {
     if (!supabase) {
       authReady = true;
       loadPixel();
-      showMetaConsent();
       resolve();
       return;
     }
@@ -204,7 +158,6 @@ export function startAnalytics(): Promise<void> {
       authReady = true;
       if (!adminSession) {
         loadPixel();
-        showMetaConsent();
         sendPixelViewContent();
       }
     });
@@ -213,7 +166,6 @@ export function startAnalytics(): Promise<void> {
       authReady = true;
       if (!adminSession) {
         loadPixel();
-        showMetaConsent();
         sendPixelViewContent();
       }
       resolve();
@@ -221,24 +173,6 @@ export function startAnalytics(): Promise<void> {
     window.addEventListener('pagehide', () => subscription.unsubscribe(), { once: true });
   });
   return initialization;
-}
-
-export function hasMetaConsent(): boolean {
-  return pixelConsent;
-}
-
-export function acceptMetaConsent(): void {
-  pixelConsent = true;
-  try {
-    localStorage.setItem(consentKey, 'accepted');
-  } catch {
-    // The choice remains valid for this page even when storage is unavailable.
-  }
-  if (!trackingAllowed()) return;
-  loadPixel();
-  window.fbq?.('track', 'PageView');
-  sendPixelViewContent();
-  sendPixelInitiateCheckout();
 }
 
 function sendOwnEvent(payload: EventPayload): void {
@@ -269,7 +203,7 @@ function sendOwnEvent(payload: EventPayload): void {
 
 export function trackPageView(): void {
   sendOwnEvent({ event_name: 'page_view', page_section: 'landing' });
-  if (pixelConsent && trackingAllowed()) {
+  if (trackingAllowed()) {
     loadPixel();
     window.fbq?.('track', 'PageView');
   }
@@ -315,7 +249,7 @@ export function trackFormError(offer: Offer): void {
 export function trackLead(offer: Offer, value: number): string {
   const eventID = crypto.randomUUID();
   sendOwnEvent({ id: eventID, event_name: 'form_submitted', offer });
-  if (pixelConsent && trackingAllowed()) {
+  if (trackingAllowed()) {
     loadPixel();
     window.fbq?.('track', 'Lead', { value, currency: 'MAD' }, { eventID });
   }
