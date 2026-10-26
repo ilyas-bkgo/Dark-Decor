@@ -2,10 +2,12 @@ import { defineConfig } from 'vite';
 
 function socialMetadata() {
   let siteUrl;
+  let pixelId;
 
   return {
     name: 'dark-decor-social-metadata',
     configResolved(config) {
+      pixelId = config.env.VITE_META_PIXEL_ID?.trim() ?? '';
       const configuredUrl = config.env.VITE_SITE_URL?.trim();
       if (!configuredUrl) return;
 
@@ -21,7 +23,8 @@ function socialMetadata() {
       siteUrl = parsedUrl.origin;
     },
     transformIndexHtml(html) {
-      if (!siteUrl) return html;
+      const withPixelId = html.replaceAll('__DARK_DECOR_META_PIXEL_ID__', JSON.stringify(pixelId));
+      if (!siteUrl) return withPixelId;
       const tags = [
         `<meta property="og:url" content="${siteUrl}/" />`,
         `<meta property="og:image" content="${siteUrl}/og-image.jpg" />`,
@@ -29,7 +32,7 @@ function socialMetadata() {
         '<meta property="og:image:height" content="630" />',
         '<meta property="og:image:alt" content="حصيرة تجفيف للمطبخ من Dark Decor" />',
       ].join('\n    ');
-      return html.replace('</head>', `    ${tags}\n  </head>`);
+      return withPixelId.replace('</head>', `    ${tags}\n  </head>`);
     },
   };
 }

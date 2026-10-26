@@ -47,6 +47,8 @@ type EventPayload = {
 declare global {
   interface Window {
     doNotTrack?: string;
+    _fbq?: Window['fbq'];
+    __darkDecorMetaPageViewSent?: boolean;
     fbq?: (
       command: string,
       eventName: string,
@@ -111,6 +113,10 @@ function getTrafficSource(): { referrer_source: string | null; utm_campaign: str
 
 function loadPixel(): void {
   if (pixelLoaded || !pixelId || !trackingAllowed()) return;
+  if (window.fbq) {
+    pixelLoaded = true;
+    return;
+  }
   pixelLoaded = true;
   const queue: NonNullable<Window['fbq']> = (...args) => {
     const fbq = queue as typeof queue & { callMethod?: (...values: Parameters<typeof queue>) => void; queue?: unknown[]; loaded?: boolean; version?: string };
@@ -205,7 +211,11 @@ export function trackPageView(): void {
   sendOwnEvent({ event_name: 'page_view', page_section: 'landing' });
   if (trackingAllowed()) {
     loadPixel();
-    window.fbq?.('track', 'PageView');
+    if (window.__darkDecorMetaPageViewSent) {
+      window.__darkDecorMetaPageViewSent = false;
+    } else {
+      window.fbq?.('track', 'PageView');
+    }
   }
 }
 

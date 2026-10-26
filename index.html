@@ -15,6 +15,48 @@
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
+    <script>
+      (function (window, document, scriptName, scriptUrl, pixelId) {
+        if (
+          !pixelId ||
+          window.location.pathname === '/admin' ||
+          navigator.doNotTrack === '1' ||
+          navigator.doNotTrack === 'yes' ||
+          window.doNotTrack === '1'
+        ) {
+          return;
+        }
+
+        if (window.fbq) return;
+
+        const pixel = (window.fbq = function () {
+          pixel.callMethod
+            ? pixel.callMethod.apply(pixel, arguments)
+            : pixel.queue.push(arguments);
+        });
+        window._fbq = pixel;
+        pixel.push = pixel;
+        pixel.loaded = true;
+        pixel.version = '2.0';
+        pixel.queue = [];
+
+        const script = document.createElement(scriptName);
+        script.async = true;
+        script.src = scriptUrl;
+        const firstScript = document.getElementsByTagName(scriptName)[0];
+        firstScript.parentNode.insertBefore(script, firstScript);
+
+        pixel('init', pixelId);
+        pixel('track', 'PageView');
+        window.__darkDecorMetaPageViewSent = true;
+      })(
+        window,
+        document,
+        'script',
+        'https://connect.facebook.net/en_US/fbevents.js',
+        __DARK_DECOR_META_PIXEL_ID__,
+      );
+    </script>
   </head>
   <body>
     <div id="root"></div>
